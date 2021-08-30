@@ -1,0 +1,104 @@
+version: '3.9'
+services:
+    poc_psql:
+        image: postgres:13.2
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: ory-user
+            POSTGRES_PASSWORD: ory-pass
+            POSTGRES_DB: ory-data
+        ports:
+            - 5433:5432
+        networks:
+            - poc_network
+
+    keto-migrate:
+        depends_on:
+            - poc_psql
+        image: oryd/keto:v0.6.0-alpha.3
+        restart: on-failure
+        command:
+            migrate up --all-namespaces -c /etc/config/keto/keto.yml --yes
+        environment:
+            DSN: postgres://ory-user:ory-pass@poc_psql:5432/ory-data?sslmode=disable&max_conns=20&max_idle_conns=4
+        volumes:
+            - type: bind
+              source: ./keto_config
+              target: /etc/config/keto
+        networks:
+            - poc_network
+
+    keto:
+        depends_on:
+            - keto-migrate
+        image: oryd/keto:v0.6.0-alpha.3
+        restart: unless-stopped
+        command:
+            serve -c /etc/config/keto/keto.yml all
+        environment:
+            DSN: postgres://ory-user:ory-pass@poc_psql:5432/ory-data?sslmode=disable&max_conns=20&max_idle_conns=4
+            LOG_LEAK_SENSITIVE_VALUES: "true"
+            LOG_LEVEL: trace
+            TRACING_PROVIDER: jaeger
+            TRACING_SERVICE_NAME: Keto
+            TRACING_PROVIDER_JAEGER_SAMPLING_SERVER_URL: http://jaeger:5778/sampling
+            TRACING_PROVIDER_JAEGER_LOCAL_AGENT_ADDRESS: jaeger:6831
+            TRACING_PROVIDER_JAEGER_SAMPLING_TYPE: const
+            TRACING_PROVIDER_JAEGER_SAMPLING_VALUE: 1
+        volumes:
+            - type: bind
+              source: ./keto_config
+              target: /etc/config/keto
+        ports:
+            - 4466:4466
+            - 4467:4467
+        networks:
+            - poc_network
+
+    keycloak:
+        build: https://${GIT_OAUTH_TOKEN}@github.com/dgozalo/authz-relationships-sync-events-spi.git#main
+        restart: unless-stopped
+        environment:
+            KEYCLOAK_USER: admin
+            KEYCLOAK_PASSWORD: admin
+        ports:
+            - 8080:8080
+        networks:
+            - poc_network
+
+    opa:
+        depends_on:
+            - api
+        build: https://${GIT_OAUTH_TOKEN}@github.com/dgozalo/keto-opa-builtin-function.git#main
+        restart: unless-stopped
+        volumes:
+              - ./opa_custom/config.yaml:/config.yaml
+        environment:
+            KETO_URL: keto:4466
+        command:
+            - "run"
+            - "--server"
+            - "--log-level=debug"
+            - "--config-file=config.yaml"
+        ports:
+            - 8181:8181
+        networks:
+            - poc_network
+    
+    api:
+        depends_on:
+            - keto
+        build: 
+          context: https://${GIT_OAUTH_TOKEN}@github.com/dgozalo/authz_api_poc.git#main
+          dockerfile: src/main/docker/Dockerfile.jvm
+        restart: unless-stopped
+        environment:
+            KETO_URL: keto:4466
+            OPA_URL: opa:8181
+        ports:
+            - 8081:8081
+        networks:
+            - poc_network
+
+networks:
+    poc_network:

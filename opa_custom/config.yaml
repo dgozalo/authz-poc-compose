@@ -1,0 +1,12 @@
+services:
+  - name: poc_api
+    url: http://api:8081/api/v1
+
+bundles:
+  authz:
+    service: poc_api
+    resource: bundles
+    persist: true
+    polling:
+      min_delay_seconds: 10
+      max_delay_seconds: 20

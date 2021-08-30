@@ -1,0 +1,17 @@
+namespaces:
+  - id: 0
+    name: organizations
+  - id: 1
+    name: workspaces
+  - id: 2
+    name: kafka_clusters
+  - id: 3
+    name: users
+  - id: 4
+    name: tags
+
+serve:
+  write:
+    host: "0.0.0.0"
+  read:
+    host: "0.0.0.0"
