@@ -4,10 +4,8 @@ A compose file that will build some projects and deploy them together so the POC
 
 ## How to execute
 
-**Note**: Before running, make sure you set the `$GIT_OAUTH_TOKEN` env variable with your Github OAuth token.
-
 ```shell script
-GIT_OAUTH_TOKEN=<your_token> docker-compose up
+docker-compose up
 ```
 
 This will create these services:

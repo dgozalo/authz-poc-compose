@@ -56,7 +56,7 @@ services:
             - poc_network
 
     keycloak:
-        build: https://${GIT_OAUTH_TOKEN}@github.com/dgozalo/authz-relationships-sync-events-spi.git#main
+        build: https://github.com/dgozalo/authz-relationships-sync-events-spi.git#main
         restart: unless-stopped
         environment:
             KEYCLOAK_USER: admin
@@ -69,7 +69,7 @@ services:
     opa:
         depends_on:
             - api
-        build: https://${GIT_OAUTH_TOKEN}@github.com/dgozalo/keto-opa-builtin-function.git#main
+        build: https://github.com/dgozalo/keto-opa-builtin-function.git#main
         restart: unless-stopped
         volumes:
               - ./opa_custom/config.yaml:/config.yaml
@@ -89,7 +89,7 @@ services:
         depends_on:
             - keto
         build: 
-          context: https://${GIT_OAUTH_TOKEN}@github.com/dgozalo/authz_api_poc.git#main
+          context: https://github.com/dgozalo/authz_api_poc.git#main
           dockerfile: src/main/docker/Dockerfile.jvm
         restart: unless-stopped
         environment:
